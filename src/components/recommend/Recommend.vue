@@ -1,7 +1,7 @@
 <template>
     <div id="recommend">
-        <div class="recommend-content">
-          <!-- 轮播图，当请求到 recommends 时才渲染 -->
+        <scroll class="recommend-content" :data="recommends">
+            <!-- 轮播图，当请求到 recommends 时才渲染 -->
           <div v-if="recommends.length" class="slider-wrapper">
             <swiper>
               <div v-for="item in recommends" :key="item.id">
@@ -11,36 +11,62 @@
               </div>
             </swiper>
           </div>
+          <!-- 歌单列表 -->
           <div class="recommend-list">
-            <h1 class="list-title"></h1>
-            <ul></ul>
+            <h1 class="list-title">热门歌单推荐</h1>
+            <ul>
+              <li v-for="item in discList" :key="item.dissid">
+                <div class="icon">
+                  <img :src="item.imgurl" width="60" height="60" alt="">
+                </div>
+                <!-- 使用v-html可对转码内容进行翻译 -->
+                <div class="text">
+                  <h2 class="name" v-html="item.creator.name"></h2>
+                  <p class="desc" v-html="item.dissname"></p>
+                </div>
+              </li>
+            </ul>
           </div>
-        </div>
+        </scroll>
     </div>
 </template>
 
 <script>
-import { getRecommend } from '@/api/recommend'
+import Scroll from '@/base/scroll/Scroll'
+import { getRecommend, getDiscList } from '@/api/recommend'
 import Swiper from '@/base/swiper/Swiper'
 import { ERR_OK } from '@/api/config'
 export default {
   name: 'Recommend',
   components: {
-    Swiper
+    Swiper,
+    Scroll
   },
   data () {
     return {
-      recommends: []
+      recommends: [],
+      discList: []
     }
   },
   created () {
     this._getRecommend()
+    this._getDiscList()
   },
   methods: {
-    _getRecommend () {
+    async _getRecommend () {
       getRecommend().then((res) => {
         if (res.code === ERR_OK) {
           this.recommends = res.data.slider
+        }
+      })
+      // 测试async 与 await
+      var res1 = await getRecommend()
+      console.log(res1.data)
+    },
+    _getDiscList () {
+      getDiscList().then(res => {
+        if (res.code === ERR_OK) {
+          this.discList = res.data.list
         }
       })
     }

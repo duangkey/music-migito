@@ -3,7 +3,14 @@
     <div class="slider-group" ref="sliderGroup">
       <slot></slot>
     </div>
-    <div class="dots"></div>
+    <div class="dots">
+      <span
+      class="dot"
+      v-for="(item, index) in dots" :key="index"
+      :class="{active:currentPageIndex===index}"
+      >
+      </span>
+    </div>
   </div>
 </template>
 
@@ -26,26 +33,32 @@ export default {
     // 轮播延时
     interval: {
       type: Number,
-      default: 3000
+      default: 1000
+    }
+  },
+  data () {
+    return {
+      dots: [],
+      currentPageIndex: 0
     }
   },
   methods: {
     // 计算轮播区域的宽度
-    _setWidth () {
+    _setWidth (isResize) {
     // 拿到轮播图片数据
       this.children = this.$refs.sliderGroup.children
 
       // 父元素的宽度
       let width = 0
-      let sliderWidth = this.$refs.slider.clientWidth
+      const sliderWidth = this.$refs.slider.clientWidth
       for (let i = 0; i < this.children.length; i++) {
         const child = this.children[i]
         myDOM.addClass(child, 'slider-item')
-        child.style.width = sliderWidth = 'px'
+        child.style.width = sliderWidth + 'px'
         width += sliderWidth
       }
       // 复制一个图片的宽度
-      if (this.loop) {
+      if (this.loop && !isResize) {
         width += 2 * sliderWidth
       }
       this.$refs.sliderGroup.style.width = width + 'px'
@@ -56,19 +69,69 @@ export default {
         scrollX: true,
         scrollY: false,
         momentum: false,
-        snap: true,
-        snapLoop: this.loop,
-        snapThreshold: 0.3,
-        snapSpeed: 400,
+        snap: {
+          loop: this.loop,
+          threshold: 0.3,
+          speed: 400
+        },
         click: true
       })
+      this.slider.on('scrollEnd', () => {
+        // 获取当前页的下标
+        const activeIndex = this.slider.getCurrentPage().pageX
+        // 去掉拷贝下标
+        // if (this.loop) {
+        //   activeIndex -= 1
+        // }
+        this.currentPageIndex = activeIndex
+
+        // 重置自动轮播定时器
+        if (this.autoPlay) {
+          clearTimeout(this.timer)
+          this._initAutoPlay()
+        }
+      })
+    },
+    // 导航点初始化
+    _initDots () {
+      this.dots = new Array(this.children.length)
+    },
+    // 循环播放
+    _initAutoPlay () {
+      let pageIndex = this.currentPageIndex
+      if (this.loop) {
+        if (this.currentPageIndex === 4) {
+          pageIndex = -1
+        }
+        pageIndex += 1
+      }
+      this.timer = setTimeout(() => {
+        this.slider.goToPage(pageIndex, 0, 400)
+      }, this.interval)
     }
   },
   mounted () {
+    // 相当于$nextTick,20 ms 是一个经验值，每一个 Tick 约为 17 ms），对用户体验而言都是无感知的。
     setTimeout(() => {
       this._setWidth()
+      this._initDots()
       this._initSlider()
+      if (this.autoPlay) {
+        this._initAutoPlay()
+      }
     }, 20)
+    // 监听窗口改变事件
+    window.addEventListener('resize', () => {
+      if (!this.slider) {
+        return
+      }
+      this._setWidth(true)
+      // 重新计算
+      this.slider.refresh()
+    })
+  },
+  destroyed () {
+    clearTimeout(this.timer)
   }
 }
 </script>
@@ -79,6 +142,7 @@ export default {
 
 .slider {
   min-height: 1px;
+  position: relative;
   .slider-group {
     position: relative;
     overflow: hidden;
