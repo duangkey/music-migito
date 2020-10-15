@@ -1,12 +1,12 @@
 <template>
     <div id="recommend">
-        <scroll class="recommend-content" :data="recommends">
+        <scroll ref="scroll" class="recommend-content" :data="recommends">
             <!-- 轮播图，当请求到 recommends 时才渲染 -->
           <div v-if="recommends.length" class="slider-wrapper">
             <swiper>
               <div v-for="item in recommends" :key="item.id">
                 <a :href="item.linkUrl">
-                  <img :src="item.picUrl" alt="">
+                  <img class="needsclick" :src="item.picUrl" alt="">
                 </a>
               </div>
             </swiper>
@@ -17,7 +17,7 @@
             <ul>
               <li v-for="item in discList" :key="item.dissid">
                 <div class="icon">
-                  <img :src="item.imgurl" width="60" height="60" alt="">
+                  <img @load="loadImage" v-lazy="item.imgurl" width="60" height="60" alt="">
                 </div>
                 <!-- 使用v-html可对转码内容进行翻译 -->
                 <div class="text">
@@ -26,6 +26,9 @@
                 </div>
               </li>
             </ul>
+          </div>
+          <div v-show="!discList.length" class="loading-container">
+            <loading></loading>
           </div>
         </scroll>
     </div>
@@ -36,11 +39,13 @@ import Scroll from '@/base/scroll/Scroll'
 import { getRecommend, getDiscList } from '@/api/recommend'
 import Swiper from '@/base/swiper/Swiper'
 import { ERR_OK } from '@/api/config'
+import Loading from '@/base/loading/Loading'
 export default {
   name: 'Recommend',
   components: {
     Swiper,
-    Scroll
+    Scroll,
+    Loading
   },
   data () {
     return {
@@ -69,6 +74,13 @@ export default {
           this.discList = res.data.list
         }
       })
+    },
+    // 轮播区域图片加载一次
+    loadImage () {
+      if (!this.checkLoaded) {
+        this.$refs.scroll.refresh()
+        this.checkLoaded = true
+      }
     }
   }
 }

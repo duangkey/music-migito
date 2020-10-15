@@ -1,3 +1,4 @@
+
 export const myDOM = {
   /**
    * 判断是否有该 class
@@ -17,5 +18,16 @@ export const myDOM = {
     const newClass = el.className.split(' ')
     newClass.push(className)
     el.className = newClass.join(' ')
+  },
+
+  // 获取点击元素的下标
+  getData (el, name, val) {
+    const prefix = 'data-'
+    name = prefix + name
+    if (val) {
+      return el.setAttribute(name)
+    } else {
+      return el.getAttribute(name)
+    }
   }
 }

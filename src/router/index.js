@@ -4,8 +4,15 @@ import Rank from '@/components/rank/Rank'
 import Recommend from '@/components/recommend/Recommend'
 import Singer from '@/components/singer/Singer'
 import Search from '@/components/search/Search'
+import SingerDetail from '@/components/singer-detail/SingerDetail'
 
 Vue.use(Router)
+
+// 防止导航重复报错
+const originalPush = Router.prototype.push
+Router.prototype.push = function push (location) {
+  return originalPush.call(this, location).catch(err => err)
+}
 
 // 路由懒加载
 const routes = [
@@ -26,7 +33,14 @@ const routes = [
   {
     path: '/singer',
     name: 'Singer',
-    component: Singer
+    component: Singer,
+    children: [
+      {
+        path: ':id',
+        name: 'SingerDetail',
+        component: SingerDetail
+      }
+    ]
   },
   {
     path: '/search',
