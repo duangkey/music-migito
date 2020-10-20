@@ -2,8 +2,8 @@ import { getLyric } from '@/api/song.js'
 import { Base64 } from 'js-base64'
 
 // 处理 musicData.singer 数组，使其变为一个字符串
-export function filterSinger(singer) {
-  let result = []
+export function filterSinger (singer) {
+  const result = []
 
   if (!singer) {
     return ''
@@ -17,7 +17,7 @@ export function filterSinger(singer) {
 }
 
 export class SingerSong {
-  constructor({id, mid, singer, name, album, duration, img, url}) {
+  constructor ({ id, mid, singer, name, album, duration, img, url }) {
     this.id = id
     this.mid = mid
     this.singer = singer
@@ -28,7 +28,7 @@ export class SingerSong {
     this.url = url
   }
   // 获取歌词数据
-  getLyric() {
+  getLyric () {
     if (this.lyric) {
       return Promise.resolve(this.lyric)
     }
@@ -46,7 +46,8 @@ export class SingerSong {
   }
 }
 
-export function createSingerSong(musicData) {
+export function createSingerSong (musicData) {
+  console.log(musicData)
   return new SingerSong({
     id: musicData.songid,
     mid: musicData.songmid,
