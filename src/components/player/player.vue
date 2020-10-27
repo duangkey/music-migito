@@ -1,7 +1,13 @@
 <template>
     <div class="player" v-show="playList.length>0">
         <!-- 正常播放器大小 -->
-      <div class="normal-player" v-show="fullScreen">
+      <transition name="normal"
+      @enter="enter"
+      @after-enter="afterEnter"
+      @leave="leave"
+      @after-leave="afterLeave"
+      >
+        <div class="normal-player" v-show="fullScreen">
           <!-- 背景图 -->
           <div class="background">
               <img width="100%" height="100%" :src="currentSong.image" alt="">
@@ -17,8 +23,8 @@
           <!-- 中间唱片部分 -->
           <div class="middle">
               <div class="middle-l">
-                  <div class="cd-wrapper">
-                      <div class="cd">
+                  <div class="cd-wrapper" ref="cdWrapper">
+                      <div class="cd" :class="cdRotate">
                           <img :src="currentSong.image" alt="" class="image">
                         </div>
                   </div>
@@ -26,18 +32,23 @@
           </div>
           <!-- 底部操作区 -->
           <div class="bottom">
+            <div class="progress-wrapper">
+              <span class="time time-l">{{format(currentTime)}}</span>
+              <div class="progress-bar-wrapper"></div>
+              <span class="time time-r">{{format(currentSong.duration)}}</span>
+            </div>
               <div class="operators">
                   <div class="icon i-left">
                       <i class="icon-sequence"></i>
                   </div>
-                   <div class="icon i-left">
-                      <i class="icon-prev"></i>
+                   <div class="icon i-left" :class="disabledCls">
+                      <i @click="prev" class="icon-prev"></i>
                   </div>
-                  <div class="icon i-center">
-                      <i class="icon-play"></i>
+                  <div class="icon i-center" :class="disabledCls">
+                      <i @click="handleMusicPlay" :class="playIcon"></i>
                   </div>
-                  <div class="icon i-right">
-                      <i class="icon-next"></i>
+                  <div class="icon i-right" :class="disabledCls">
+                      <i @click="next" class="icon-next"></i>
                   </div>
                   <div class="icon i-right">
                       <i class="icon-not-favorite"></i>
@@ -45,26 +56,42 @@
               </div>
           </div>
       </div>
+      </transition>
       <!-- 缩小版播放器 -->
-      <div class="mini-player" v-show="!fullScreen" @click="open">
+      <transition name="mini">
+        <div class="mini-player" v-show="!fullScreen" @click="open">
           <div class="icon">
-              <img height="40" width="40" :src="currentSong.image" alt="">
+              <img :class="cdRotate" height="40" width="40" :src="currentSong.image" alt="">
           </div>
           <div class="text">
               <h2 class="name" v-html="currentSong.name"></h2>
               <p class="desc" v-html="currentSong.singer"></p>
           </div>
-          <div class="control"></div>
+          <div class="control">
+            <i @click.stop="handleMusicPlay" :class="miniIcon"></i>
+          </div>
           <div class="control">
               <i class="icon-playlist"></i>
           </div>
       </div>
+      </transition>
+      <audio id="audio" ref="audio" :src="currentSong.url" @canplay="ready" @error="error" @timeupdate="updateTime"></audio>
     </div>
 </template>
 
 <script>
 import { mapGetters, mapMutations } from 'vuex'
+import animations from 'create-keyframe-animation'
+import { prefixStyle } from '@/common/js/dom'
+const transform = prefixStyle('transform')
 export default {
+  data () {
+    return {
+      songReady: false,
+      // 当前播放进度
+      cuttentTime: 0
+    }
+  },
   methods: {
     back () {
     //   this.fullScreen = false  //不能直接修改
@@ -73,17 +100,169 @@ export default {
     open () {
       this.setFullScreen(true)
     },
+    // 歌曲前进后退按钮
+    next () {
+      if (!this.songReady) {
+        return
+      }
+      let $index = this.currentIndex + 1
+      if ($index === this.playList.length) {
+        $index = 0
+      }
+      // 改变currentSong的下标 针对下标对应的歌曲进行播放
+      this.setCurrentIndex($index)
+      if (!this.playing) {
+        this.handleMusicPlay()
+      }
+      this.songReady = false
+    },
+    prev () {
+      if (!this.songReady) {
+        return
+      }
+      let $index = this.currentIndex - 1
+      if ($index === -1) {
+        $index = this.playList.length - 1
+      }
+      this.setCurrentIndex($index)
+      if (!this.playing) {
+        this.handleMusicPlay()
+      }
+      this.songReady = false
+    },
+    enter (el, done) {
+      const { x, y, scale } = this._handleposAndScale()
+      const animation = {
+        0: {
+          transform: `translate3d(${x}px,${y}px,0) scale(${scale})`
+        },
+        60: {
+          transform: 'translate3d(0,0,0) scale(1.1)'
+        },
+        100: {
+          transform: 'translate3d(0,0,0) scale(1)'
+        }
+      }
+      animations.registerAnimation({
+        name: 'move',
+        animation,
+        presets: {
+          duration: 400,
+          easing: 'linear'
+        }
+      })
+      animations.runAnimation(this.$refs.cdWrapper, 'move', done)
+    },
+    afterEnter () {
+      animations.unregisterAnimation('move')
+      // 清空animation
+      this.$refs.cdWrapper.style.animation = ''
+    },
+    leave (el, done) {
+      this.$refs.cdWrapper.style.transition = 'all 0.4s'
+      const { x, y, scale } = this._handleposAndScale()
+      this.$refs.cdWrapper.style[transform] = `translate3d(${x}px,${y}px,0) scale(${scale})`
+      this.$refs.cdWrapper.addEventListener('transitionend', done)
+    },
+    afterLeave () {
+      this.$refs.cdWrapper.style.transition = ''
+      this.$refs.cdWrapper.style[transform] = ''
+    },
+    ready () {
+      this.songReady = true
+    },
+    error () {
+      this.songReady = true
+    },
+    handleMusicPlay () {
+      this.setPlayingState(!this.playing)
+    },
+    // 处理音频播放进度
+    updateTime (e) {
+      this.currentTime = e.target.currentTime
+    },
+    // 转换时间格式
+    format (interval) {
+      // 向下取整
+      interval = interval | 0
+      const minute = interval / 60 | 0
+      const second = this._pad(interval % 60 | 0)
+      return `${minute}:${second}`
+    },
+    // 时间戳补零
+    _pad (num, n = 2) {
+      let len = num.toString().length
+      while (len < n) {
+        num = '0' + num
+        len++
+      }
+      return num
+    },
+
+    _handleposAndScale () {
+      // 定义小缩略图的宽度
+      const targetWidth = 40
+      // 定义缩略图中心坐标离左侧的距离
+      const paddingLeft = 40
+      // 定义缩略图中心坐标离底部的距离
+      const paddingBottom = 30
+      // 定义中心图距离顶部的距离
+      const paddingTop = 80
+      // 定义中心图片的宽度
+      const width = window.innerWidth * 0.8
+      // 初始缩放比例
+      const scale = targetWidth / width
+      // 大小图中心点之间的横向距离
+      const x = -(window.innerWidth / 2 - paddingLeft)
+      // 大小图中心点之间的纵向距离
+      const y = window.innerHeight - width / 2 - paddingBottom - paddingTop
+      return {
+        x,
+        y,
+        scale
+      }
+    },
     ...mapMutations({
       // 映射出fullScreen
-      setFullScreen: 'SET_FULL_SCREEN'
+      setFullScreen: 'SET_FULL_SCREEN',
+      setPlayingState: 'SET_PLAYING_STATE',
+      setCurrentIndex: 'SET_CURRENT_INDEX'
     })
   },
   computed: {
+    cdRotate () {
+      return this.playing ? 'play' : 'play pause'
+    },
+    playIcon () {
+      return this.playing ? 'icon-pause' : 'icon-play'
+    },
+    miniIcon () {
+      return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
+    },
+    // 歌曲没有准备好，出现短暂的禁止
+    disabledCls () {
+      return this.songReady ? '' : 'disable'
+    },
     ...mapGetters([
       'fullScreen', // 控制显示/隐藏
       'playList', // 控制整个播放器的渲染
-      'currentSong'
+      'currentSong',
+      'playing', // 歌曲的播放
+      'currentIndex' // 播放歌曲的下标
     ])
+  },
+  watch: {
+    currentSong () {
+      this.$nextTick(() => {
+        this.$refs.audio.play()
+      })
+    },
+    playing (newPlaying) {
+      const audio = this.$refs.audio
+      this.$nextTick(() => {
+        newPlaying ? audio.play() : audio.pause()
+      })
+    }
   }
 }
 </script>
@@ -333,7 +512,7 @@ export default {
     }
     .icon {
       flex: 0 0 40px;
-      width: 40px;
+      // width: 40px;
       padding: 0 10px 0 20px;
       img {
         border-radius: 50%;
@@ -366,7 +545,7 @@ export default {
     }
     .control {
       flex: 0 0 30px;
-      width: 30px;
+      // width: 30px;
       padding: 0 10px;
       .icon-play-mini, .icon-pause-mini, .icon-playlist {
         font-size: 30px;

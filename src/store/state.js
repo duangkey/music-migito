@@ -3,7 +3,7 @@ import { playMode } from '@/common/js/config'
 // 初始状态管理
 const state = {
   singer: {},
-  palying: false,
+  playing: false,
   fullScreen: false,
   playList: [],
   sequenceList: [],
