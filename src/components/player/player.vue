@@ -80,7 +80,7 @@
           </div>
       </div>
       </transition>
-      <audio id="audio" ref="audio" :src="currentSong.url" @canplay="ready" @error="error" @timeupdate="updateTime"></audio>
+      <audio id="audio" ref="audio" :src="currentSong.url" @canplay="ready" @error="error" @timeupdate="updateTime" @ended="end"></audio>
     </div>
 </template>
 
@@ -216,6 +216,8 @@ export default {
       this.$refs.audio.currentTime = this.currentSong.duration * percent
       if (!this.playing) {
         this.handleMusicPlay()
+      } else {
+        this.next()
       }
     },
     _handleposAndScale () {
@@ -240,6 +242,17 @@ export default {
         y,
         scale
       }
+    },
+    // 音频播放结束触发事件
+    end () {
+      if (this.mode === playMode.loop) {
+        this.loop()
+      }
+      this.next()
+    },
+    loop () {
+      this.$refs.audio.currentTime = 0
+      this.$refs.audio.play()
     },
     changeMode () {
       const mode = (this.mode + 1) % 3
