@@ -40,8 +40,8 @@
               <span class="time time-r">{{format(currentSong.duration)}}</span>
             </div>
               <div class="operators">
-                  <div class="icon i-left">
-                      <i class="icon-sequence"></i>
+                  <div class="icon i-left" @click="changeMode">
+                      <i :class="iconMode"></i>
                   </div>
                    <div class="icon i-left" :class="disabledCls">
                       <i @click="prev" class="icon-prev"></i>
@@ -90,6 +90,8 @@ import animations from 'create-keyframe-animation'
 import { prefixStyle } from '@/common/js/dom'
 import ProgressBar from '@/base/progress-bar/progress-bar'
 import ProgressCircle from '@/base/progress-circle/progress-circle'
+import { playMode } from '@/common/js/config'
+import { shuffle } from '@/common/js/util'
 const transform = prefixStyle('transform')
 export default {
   data () {
@@ -239,11 +241,34 @@ export default {
         scale
       }
     },
+    changeMode () {
+      const mode = (this.mode + 1) % 3
+      this.setPlayMode(mode)
+
+      // 修改列表
+      let list = null
+      if (mode === playMode.random) {
+        // 洗牌
+        list = shuffle(this.sequenceList)
+      } else {
+        list = this.sequenceList
+      }
+      this._resetCurrentIndex(list)
+      this.setPlayList(list)
+    },
+    _resetCurrentIndex (list) {
+      const index = list.findIndex((item) => {
+        return item.id === this.currentSong.id
+      })
+      this.setCurrentIndex(index)
+    },
     ...mapMutations({
       // 映射出fullScreen
       setFullScreen: 'SET_FULL_SCREEN',
       setPlayingState: 'SET_PLAYING_STATE',
-      setCurrentIndex: 'SET_CURRENT_INDEX'
+      setCurrentIndex: 'SET_CURRENT_INDEX',
+      setPlayMode: 'SET_PLAY_MODE',
+      setPlayList: 'SET_PLAYLIST'
     })
   },
   computed: {
@@ -255,6 +280,10 @@ export default {
     },
     miniIcon () {
       return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
+    },
+    // 播放模式
+    iconMode () {
+      return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
     },
     // 歌曲没有准备好，出现短暂的禁止
     disabledCls () {
@@ -268,11 +297,17 @@ export default {
       'playList', // 控制整个播放器的渲染
       'currentSong',
       'playing', // 歌曲的播放
-      'currentIndex' // 播放歌曲的下标
+      'currentIndex', // 播放歌曲的下标
+      'mode', // 播放模式
+      'sequenceList'
     ])
   },
   watch: {
-    currentSong () {
+    currentSong (newSong, oldSong) {
+      // 判断新旧歌曲是否一致
+      if (newSong.id === oldSong.id) {
+        return
+      }
       this.$nextTick(() => {
         this.$refs.audio.play()
       })

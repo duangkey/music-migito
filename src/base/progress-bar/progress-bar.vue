@@ -66,7 +66,11 @@ export default {
     },
     // 处理点击跳转进度
     handleClickBar (e) {
-      this._offset(e.offsetX)
+      const rect = this.$refs.progressBar.getBoundingClientRect()
+      const offsetWidth = e.pageX - rect.left
+      this._offset(offsetWidth)
+      // 当点击progress-btn的时候，offsetX获取不对
+      // this._offset(e.offsetX)
       this._triggerPercent()
     }
   },
