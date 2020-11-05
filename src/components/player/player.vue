@@ -29,7 +29,7 @@
                         </div>
                   </div>
               </div>
-              <scroll class="middle-r" ref="lyricList" :data="currentLyric.lines">
+              <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
                 <div class="lyric-wrapper">
                   <div v-if="currentLyric">
                     <p class="text"
@@ -304,6 +304,12 @@ export default {
     // 歌词每一行改变，触发回调函数
     handeLyric ({ lineNum, txt }) {
       this.currentLineNum = lineNum
+      if (lineNum > 5) {
+        const lineEl = this.$refs.lyricLine[lineNum - 5]
+        this.$refs.lyricList.scrollToElement(lineEl, 1000)
+      } else {
+        this.$refs.lyricList.scrollToElement(0, 0, 1000)
+      }
     },
     ...mapMutations({
       // 映射出fullScreen
