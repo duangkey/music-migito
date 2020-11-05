@@ -29,6 +29,18 @@
                         </div>
                   </div>
               </div>
+              <scroll class="middle-r" ref="lyricList" :data="currentLyric.lines">
+                <div class="lyric-wrapper">
+                  <div v-if="currentLyric">
+                    <p class="text"
+                    ref="lyricLine"
+                    :class="{'current': currentLineNum === index}"
+                    v-for="(line, index) in currentLyric.lines"
+                    :key="index"
+                    >{{line.txt}}</p>
+                  </div>
+                </div>
+              </scroll>
           </div>
           <!-- 底部操作区 -->
           <div class="bottom">
@@ -92,6 +104,8 @@ import ProgressBar from '@/base/progress-bar/progress-bar'
 import ProgressCircle from '@/base/progress-circle/progress-circle'
 import { playMode } from '@/common/js/config'
 import { shuffle } from '@/common/js/util'
+import Lyric from 'lyric-parser'
+import Scroll from '@/base/scroll/Scroll'
 const transform = prefixStyle('transform')
 export default {
   data () {
@@ -99,12 +113,17 @@ export default {
       songReady: false,
       // 当前播放进度
       currentTime: 0,
-      radius: 32
+      radius: 32,
+      // 默认当前歌词为空
+      currentLyric: null,
+      // 当前歌词高亮显示
+      currentLineNum: 0
     }
   },
   components: {
     ProgressBar,
-    ProgressCircle
+    ProgressCircle,
+    Scroll
   },
   methods: {
     back () {
@@ -216,8 +235,6 @@ export default {
       this.$refs.audio.currentTime = this.currentSong.duration * percent
       if (!this.playing) {
         this.handleMusicPlay()
-      } else {
-        this.next()
       }
     },
     _handleposAndScale () {
@@ -275,6 +292,19 @@ export default {
       })
       this.setCurrentIndex(index)
     },
+    // 获取歌词
+    getLyric () {
+      this.currentSong.getLyric().then((lyric) => {
+        this.currentLyric = new Lyric(lyric, this.handeLyric)
+        if (this.playing) {
+          this.currentLyric.play()
+        }
+      })
+    },
+    // 歌词每一行改变，触发回调函数
+    handeLyric ({ lineNum, txt }) {
+      this.currentLineNum = lineNum
+    },
     ...mapMutations({
       // 映射出fullScreen
       setFullScreen: 'SET_FULL_SCREEN',
@@ -323,6 +353,7 @@ export default {
       }
       this.$nextTick(() => {
         this.$refs.audio.play()
+        this.getLyric()
       })
     },
     playing (newPlaying) {
