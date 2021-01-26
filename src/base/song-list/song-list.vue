@@ -3,6 +3,9 @@
         <ul>
           <!-- 点击派发播放指定曲目的事件 -->
             <li @click="selectItem(song,index)" v-for="(song,index) in songs" class="item" :key="song.id">
+              <div class="rank" v-show="rank">
+                <span :class="getRankClass(index)">{{getRankText(index)}}</span>
+              </div>
                 <div class="content">
                     <h2 class="name">{{song.name}}</h2>
                     <p class="desc">{{handleDesc(song)}}</p>
@@ -18,9 +21,25 @@ export default {
     songs: {
       type: Array,
       default: () => []
+    },
+    rank: {
+      type: Boolean,
+      default: false
     }
   },
   methods: {
+    getRankClass (index) {
+      if (index <= 2) {
+        return `icon icon${index}`
+      } else {
+        return 'text'
+      }
+    },
+    getRankText (index) {
+      if (index > 2) {
+        return index + 1
+      }
+    },
     handleDesc (song) {
       return `${song.singer}  ${song.album}`
     },

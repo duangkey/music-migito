@@ -16,22 +16,22 @@ handlePlaylist(playlist) {
 export const playlistMixin = {
   computed: {
     ...mapGetters([
-      'playlist'
+      'playList'
     ])
   },
-  mounted() {
-    this.handlePlaylist(this.playlist)
+  mounted () {
+    this.handlePlaylist(this.playList)
   },
-  activated() {
-    this.handlePlaylist(this.playlist)
+  activated () {
+    this.handlePlaylist(this.playList)
   },
   watch: {
-    playlist(newVal) {
+    playList (newVal) {
       this.handlePlaylist(newVal)
     }
   },
   methods: {
-    handlePlaylist() {
+    handlePlaylist () {
       throw new Error('component must implement handlePlaylist method')
     }
   }

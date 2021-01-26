@@ -47,7 +47,7 @@ export function createSong (musicData) {
   })
 }
 
-function filterSinger (singer) {
+export function filterSinger (singer) {
   const ret = []
   if (!singer) {
     return ''

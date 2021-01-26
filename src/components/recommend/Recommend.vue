@@ -1,5 +1,5 @@
 <template>
-    <div id="recommend">
+    <div id="recommend" ref="recommend">
         <scroll ref="scroll" class="recommend-content" :data="recommends">
             <!-- 轮播图，当请求到 recommends 时才渲染 -->
           <div v-if="recommends.length" class="slider-wrapper">
@@ -15,7 +15,7 @@
           <div class="recommend-list">
             <h1 class="list-title">热门歌单推荐</h1>
             <ul>
-              <li v-for="item in discList" :key="item.dissid">
+              <li @click="selectItem(item)" v-for="item in discList" :key="item.dissid">
                 <div class="icon">
                   <img @load="loadImage" v-lazy="item.imgurl" width="60" height="60" alt="">
                 </div>
@@ -31,6 +31,7 @@
             <loading></loading>
           </div>
         </scroll>
+        <router-view></router-view>
     </div>
 </template>
 
@@ -40,8 +41,11 @@ import { getRecommend, getDiscList } from '@/api/recommend'
 import Swiper from '@/base/swiper/Swiper'
 import { ERR_OK } from '@/api/config'
 import Loading from '@/base/loading/Loading'
+import { playlistMixin } from '@/common/js/mixin'
+import { mapMutations } from 'vuex'
 export default {
   name: 'Recommend',
+  mixins: [playlistMixin],
   components: {
     Swiper,
     Scroll,
@@ -75,13 +79,27 @@ export default {
         }
       })
     },
+    selectItem (item) {
+      this.$router.push({
+        path: `/recommend/${item.dissid}`
+      })
+      this.setDisc(item)
+    },
     // 轮播区域图片加载一次
     loadImage () {
       if (!this.checkLoaded) {
         this.$refs.scroll.refresh()
         this.checkLoaded = true
       }
-    }
+    },
+    handlePlaylist (playList) {
+      const bottom = playList.length > 0 ? '60px' : ''
+      this.$refs.recommend.style.bottom = bottom
+      this.$refs.scroll.refresh()
+    },
+    ...mapMutations({
+      setDisc: 'SET_DISC'
+    })
   }
 }
 </script>
