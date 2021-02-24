@@ -27,6 +27,11 @@ export default {
     listenScroll: {
       type: Boolean,
       default: false
+    },
+    // 上拉刷新
+    pullup: {
+      type: Boolean,
+      default: false
     }
   },
   mounted () {
@@ -48,6 +53,15 @@ export default {
         const that = this
         this.scroll.on('scroll', (pos) => {
           that.$emit('scroll', pos)
+        })
+      }
+
+      // 判断是否要上拉刷新
+      if (this.pullup) {
+        this.scroll.on('scrollEnd', () => {
+          if (this.scroll.y <= this.scroll.maxScrolly + 50) {
+            this.$emit('scrollToEnd')
+          }
         })
       }
     },
